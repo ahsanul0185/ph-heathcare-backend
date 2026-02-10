@@ -1,72 +1,65 @@
-import { Request, Response } from "express"
-import { catchAsync } from "../../shared/catchAsync"
+import { Request, Response } from "express";
+import { catchAsync } from "../../shared/catchAsync";
 import { authService } from "./auth.service";
 import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 import { tokenUtils } from "../../utils/token";
 import ms, { StringValue } from "ms";
-import { env } from "../../../config/env";
+import { env } from "../../config/env";
 
+const registerPatient = catchAsync(async (req: Request, res: Response) => {
+  const maxAge = ms(env.ACCESS_TOKEN_EXPIRES_IN as StringValue);
+  console.log(maxAge);
 
-const registerPatient = catchAsync(
-    async (req : Request, res : Response) =>{
+  console.log(env.ACCESS_TOKEN_EXPIRES_IN);
 
-        const maxAge = ms(env.ACCESS_TOKEN_EXPIRES_IN as StringValue);
-        console.log(maxAge)
+  const payload = req.body;
 
-        console.log(env.ACCESS_TOKEN_EXPIRES_IN)
+  const result = await authService.registerPatient(payload);
 
-        const payload = req.body;
+  const { accessToken, refreshToken, token, ...rest } = result;
 
-        const result = await authService.registerPatient(payload);
+  tokenUtils.setAccessTokenCookie(res, accessToken);
+  tokenUtils.setRefreshTokenCookie(res, refreshToken);
+  tokenUtils.setBetterAuthSessionCookie(res, token as string);
 
-        const {accessToken, refreshToken, token, ...rest} = result;
+  sendResponse(res, {
+    httpStatusCode: status.CREATED,
+    success: true,
+    message: "Patient registered successfully",
+    data: {
+      token,
+      accessToken,
+      refreshToken,
+      ...rest,
+    },
+  });
+});
+const loginUser = catchAsync(async (req: Request, res: Response) => {
+  const payload = req.body;
 
-        tokenUtils.setAccessTokenCookie(res, accessToken);
-        tokenUtils.setRefreshTokenCookie(res, refreshToken);
-        tokenUtils.setBetterAuthSessionCookie(res, token as string);
+  const result = await authService.loginUser(payload);
 
+  const { accessToken, refreshToken, token, ...rest } = result;
 
-        sendResponse(res, {
-            httpStatusCode : status.CREATED,
-            success : true,
-            message : "Patient registered successfully",
-            data : {
-                token, 
-                accessToken,
-                refreshToken,
-                ...rest
-            }
-        })
-    }
-) 
-const loginUser = catchAsync(
-    async (req : Request, res : Response) =>{
-        const payload = req.body;
+  tokenUtils.setAccessTokenCookie(res, accessToken);
+  tokenUtils.setRefreshTokenCookie(res, refreshToken);
+  tokenUtils.setBetterAuthSessionCookie(res, token);
 
-        const result = await authService.loginUser(payload);
-
-        const {accessToken, refreshToken, token, ...rest} = result;
-
-        tokenUtils.setAccessTokenCookie(res, accessToken);
-        tokenUtils.setRefreshTokenCookie(res, refreshToken);
-        tokenUtils.setBetterAuthSessionCookie(res, token);
-
-        sendResponse(res, {
-            httpStatusCode : status.OK,
-            success : true,
-            message : "User logged in successfully",
-            data : {
-                token, 
-                accessToken,
-                refreshToken,
-                ...rest
-            }
-        })
-    }
-)
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "User logged in successfully",
+    data: {
+      token,
+      accessToken,
+      refreshToken,
+      ...rest,
+    },
+  });
+});
 
 export const authController = {
-    registerPatient,
-    loginUser
-}
+  registerPatient,
+  loginUser,
+};
