@@ -16,26 +16,35 @@ const getAllDoctors = async () => {
     return doctors;
 }
 
-const getDoctorById = async (id : string) => {
+const getDoctorById = async (id: string) => {
     const doctor = await prisma.doctor.findUnique({
-        where : {
-            id
+        where: {
+            id,
+            isDeleted: false,
         },
-        include : {
-            user : true,
-            specialties : {
-                include : {
-                    specialty : true
+        include: {
+            user: true,
+            specialties: {
+                include: {
+                    specialty: true
                 }
-            }
+            },
+            appointments: {
+                include: {
+                    patient: true,
+                    schedule: true,
+                    prescription: true,
+                }
+            },
+            doctorSchedules: {
+                include: {
+                    schedule: true,
+                }
+            },
+            reviews: true
         }
     })
-
-    if (!doctor) {
-        throw new AppError(status.NOT_FOUND, "Doctor not found");
-    }
-
-    return doctor
+    return doctor;
 }
 
 export const doctorService = {
