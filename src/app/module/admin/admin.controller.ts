@@ -56,12 +56,8 @@ const updateAdmin = catchAsync(
 const deleteAdmin = catchAsync(
     async (req: Request, res: Response) => {
         const { id } = req.params;
-        // const user = req.user;
-        const user = {
-            userId : "asldfj",
-            role : Role.ADMIN,
-            email : "emial"
-        }
+        
+        const user = req.user;
 
         const result = await adminService.deleteAdmin(id as string, user);
 
@@ -75,7 +71,7 @@ const deleteAdmin = catchAsync(
 
 )
 
-export const AdminController = {
+export const adminController = {
     getAllAdmins,
     updateAdmin,
     deleteAdmin,

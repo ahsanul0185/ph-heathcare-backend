@@ -6,6 +6,7 @@ import status from "http-status";
 import { prisma } from "../lib/prisma";
 import { jwtUtils } from "../utils/jwt";
 import { env } from "../config/env";
+import { role } from "better-auth/plugins";
 
 export const checkAuth =
   (...authRoles: Role[]) =>
@@ -78,6 +79,12 @@ export const checkAuth =
               status.UNAUTHORIZED,
               "Forbidden access! User role does not match required roles",
             );
+          }
+
+          req.user = {
+            userId : user.id,
+            role : user.role,
+            email : user.email
           }
         }
       }

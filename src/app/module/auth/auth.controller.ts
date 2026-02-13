@@ -6,6 +6,7 @@ import status from "http-status";
 import { tokenUtils } from "../../utils/token";
 import ms, { StringValue } from "ms";
 import { env } from "../../config/env";
+import AppError from "../../interfaces/AppError";
 
 const registerPatient = catchAsync(async (req: Request, res: Response) => {
   const maxAge = ms(env.ACCESS_TOKEN_EXPIRES_IN as StringValue);
@@ -35,6 +36,7 @@ const registerPatient = catchAsync(async (req: Request, res: Response) => {
     },
   });
 });
+
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const payload = req.body;
 
@@ -59,7 +61,50 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getMe = catchAsync(async (req: Request, res: Response) => {
+
+  const user = req.user;
+
+  const result = await authService.getMe(user);
+
+  sendResponse(res, {
+    httpStatusCode: status.OK,
+    success: true,
+    message: "User fetched successfully",
+    data: result,
+  });
+});
+
+
+const getNewToken = catchAsync(async (req: Request, res: Response) => {
+
+    const refreshToken = req.cookies.refreshToken;
+    const betterAuthSessionToken = req.cookies["better-auth.session_token"];
+
+    if (!refreshToken) {
+      throw new AppError(status.UNAUTHORIZED, "Refresh token is missing");
+    }
+
+    const result = await authService.getNewToken(refreshToken, betterAuthSessionToken);
+
+    const { accessToken, refreshToken: newRefreshToken, sessionToken } = result;
+
+    tokenUtils.setAccessTokenCookie(res, accessToken);
+    tokenUtils.setRefreshTokenCookie(res, newRefreshToken);
+    tokenUtils.setBetterAuthSessionCookie(res, sessionToken);
+
+    sendResponse(res, {
+      httpStatusCode: status.OK,
+      success: true,
+      message : "New tokens generated successfully",
+      data : result
+    });
+
+});
+
 export const authController = {
   registerPatient,
   loginUser,
+  getMe,
+  getNewToken
 };
