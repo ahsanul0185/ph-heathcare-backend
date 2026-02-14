@@ -4,7 +4,7 @@ import status from "http-status";
 export const notFound = (req : Request, res : Response, next : NextFunction) => {
     res.status(status.NOT_FOUND).json({
         success : false,
-        message : `Route ${req.originalUrl} not found`,
+        message : `Route ${req.originalUrl} not found on this server`,
     })
 };
  

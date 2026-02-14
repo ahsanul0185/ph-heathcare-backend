@@ -4,8 +4,11 @@ import { prisma } from "./prisma";
 import { Role, UserStatus } from "../../generated/prisma/enums";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { sendEmail } from "../utils/email";
+import { env } from "../config/env";
 
 export const auth = betterAuth({
+    baseURL : env.BETTER_AUTH_URL,
+    secret : env.BETTER_AUTH_SECRET,
     database: prismaAdapter(prisma, {
         provider: "postgresql", // or "mysql", "postgresql", ...etc
     }),
@@ -14,6 +17,22 @@ export const auth = betterAuth({
         enabled : true,
         requireEmailVerification : true,
     },
+
+    socialProviders : {
+        google : {
+            clientId : env.GOOGLE_CLIENT_ID,
+            clientSecret : env.GOOGLE_CLIENT_SECRET,
+            mapProfileToUser : () => ({
+                role : Role.PATIENT,
+                status : UserStatus.ACTIVE,
+                needPasswordChange : false,
+                isDeleted : false,
+                emailVerified : true,
+                deletedAt : null,
+            })
+        }
+    },
+
 
     emailVerification : {
         sendOnSignUp : true,
@@ -110,10 +129,32 @@ export const auth = betterAuth({
             enabled : true,
             maxAge : 24 * 60 * 60, // 1 day
         }
-    }
+    },
+    // redirectURLs : {
+    //     signIn : `${env.BETTER_AUTH_URL}/api/v1/auth/google/success`,
+    // },
 
-    // trustedOrigins : [process.env.BETTER_AUTH_URL || "http://localhost:5000"],
-    // advanced :{
-    //     disableCSRFCheck : true
-    // }
+    trustedOrigins : [process.env.BETTER_AUTH_URL || "http://localhost:5000", env.FRONTEND_URL],
+    advanced :{
+        // disableCSRFCheck : true,
+        useSecureCookies : false,
+        cookies : {
+            state : {
+                attributes : {
+                    sameSite : "none",
+                    secure : true,
+                    httpOnly : true,
+                    path : "/",
+                }
+            },
+            sessionToken : {
+                attributes : {
+                    sameSite : "none",
+                    secure : true,
+                    httpOnly : true,
+                    path : "/",
+                }
+            }
+        }
+    }
 });
