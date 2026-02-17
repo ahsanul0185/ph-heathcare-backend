@@ -2,15 +2,17 @@ import { Router } from "express";
 import { checkAuth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 import { scheduleController } from "./schedule.controller";
+import { validateRequest } from "../../middleware/validateRequest";
+import { ScheduleValidation } from "./schedule.validation";
 
 
 const router = Router();
 
 
-router.post("/", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), scheduleController.createSchedule);
+router.post("/", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), validateRequest(ScheduleValidation.createScheduleZodSchema), scheduleController.createSchedule);
 router.get("/", checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR), scheduleController.getAllSchedules);
 router.get("/:id", checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR), scheduleController.getScheduleById);
-router.put("/:id", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), scheduleController.updateSchedule);
+router.put("/:id", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), validateRequest(ScheduleValidation.updateScheduleZodSchema), scheduleController.updateSchedule);
 router.delete("/:id", checkAuth(Role.ADMIN, Role.SUPER_ADMIN), scheduleController.deleteSchedule);
 
 export const scheduleRoutes = router;
