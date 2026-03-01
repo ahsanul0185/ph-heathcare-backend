@@ -1,11 +1,9 @@
 import status from "http-status";
-import AppError from "../../interfaces/AppError";
+import { UserStatus } from "../../../generated/prisma/enums";
+import AppError from "../../errorHelpers/AppError";
+import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { IUpdateAdminPayload } from "./admin.interface";
-import { UserStatus } from "../../../generated/prisma/enums";
-import { IRequestUser } from "../../interfaces/requestUser.interface";
-
-
 
 const getAllAdmins = async () => {
     const admins = await prisma.admin.findMany({
@@ -27,8 +25,6 @@ const getAdminById = async (id: string) => {
     })
     return admin;
 }
-
-
 
 const updateAdmin = async (id: string, payload: IUpdateAdminPayload) => {
     //TODO: Validate who is updating the admin user. Only super admin can update admin user and only super admin can update super admin user but admin user cannot update super admin user
@@ -57,13 +53,9 @@ const updateAdmin = async (id: string, payload: IUpdateAdminPayload) => {
     return updatedAdmin;
 }
 
-
-
 //soft delete admin user by setting isDeleted to true and also delete the user session and account
 const deleteAdmin = async (id: string, user : IRequestUser) => {
     //TODO: Validate who is deleting the admin user. Only super admin can delete admin user and only super admin can delete super admin user but admin user cannot delete super admin user
-
-    // validate self deleting
 
 
     const isAdminExist = await prisma.admin.findUnique({
@@ -115,8 +107,7 @@ const deleteAdmin = async (id: string, user : IRequestUser) => {
     return result;
 }
 
-
-export const adminService = {
+export const AdminService = {
     getAllAdmins,
     getAdminById,
     updateAdmin,

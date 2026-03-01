@@ -1,6 +1,5 @@
 import z from "zod";
 import { Gender } from "../../../generated/prisma/enums";
-
 export const updateDoctorZodSchema = z.object({
     doctor: z.object({
         name: z.string("Name must be string").min(5, "Name must be at least 5 characters").max(30, "Name must be at most 30 characters").optional(),

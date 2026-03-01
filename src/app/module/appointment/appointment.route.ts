@@ -1,11 +1,9 @@
 import { Router } from "express";
-import { checkAuth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
-
-
+import { checkAuth } from "../../middleware/checkAuth";
+import { AppointmentController } from "./appointment.controller";
 
 const router = Router();
-
 
 router.post("/book-appointment", checkAuth(Role.PATIENT), AppointmentController.bookAppointment);
 router.get("/my-appointments", checkAuth(Role.PATIENT, Role.DOCTOR), AppointmentController.getMyAppointments);

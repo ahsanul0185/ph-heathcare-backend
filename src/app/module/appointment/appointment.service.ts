@@ -2,14 +2,13 @@ import status from "http-status";
 // import { uuidv7 } from "zod/mini";
 import { v7 as uuidv7 } from "uuid";
 import { PaymentStatus, Role } from "../../../generated/prisma/enums";
-
+import { envVars } from "../../config/env";
+import { stripe } from "../../config/stripe.config";
+import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { AppointmentStatus } from './../../../generated/prisma/enums';
 import { IBookAppointmentPayload } from "./appointment.interface";
-import { stripe } from "../../config/stripe.config";
-import { env } from "../../config/env";
-import AppError from "../../interfaces/AppError";
 
 // Pay Now Book Appointment
 const bookAppointment = async (payload : IBookAppointmentPayload, user : IRequestUser) => {
@@ -97,10 +96,10 @@ const bookAppointment = async (payload : IBookAppointmentPayload, user : IReques
                 paymentId : paymentData.id,
             },
 
-            success_url: `${env.FRONTEND_URL}/dashboard/payment/payment-success`,
+            success_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-success`,
 
             // cancel_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-failed`,
-            cancel_url: `${env.FRONTEND_URL}/dashboard/appointments`,
+            cancel_url: `${envVars.FRONTEND_URL}/dashboard/appointments`,
         })
 
         return {
@@ -384,10 +383,10 @@ const initiatePayment = async (appointmentId: string, user : IRequestUser) => {
             paymentId: appointmentData.payment.id,
         },
 
-        success_url: `${env.FRONTEND_URL}/dashboard/payment/payment-success?appointment_id=${appointmentData.id}&payment_id=${appointmentData.payment.id}`,
+        success_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-success?appointment_id=${appointmentData.id}&payment_id=${appointmentData.payment.id}`,
 
         // cancel_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-failed`,
-        cancel_url: `${env.FRONTEND_URL}/dashboard/appointments?error=payment_cancelled`,
+        cancel_url: `${envVars.FRONTEND_URL}/dashboard/appointments?error=payment_cancelled`,
     })
 
     return {
@@ -417,97 +416,7 @@ const cancelUnpaidAppointments = async () => {
                 id: {
                     in: appointmentToCancel,
                 },
-            },/* eslint-disable @typescript-eslint/no-explicit-any */
-import Stripe from "stripe";
-import { PaymentStatus } from "../../../generated/prisma/enums";
-import { prisma } from "../../lib/prisma";
-
-
-const handlerStripeWebhookEvent = async (event : Stripe.Event) =>{
-
-    const existingPayment = await prisma.payment.findFirst({
-        where:{
-            stripeEventId : event.id
-        }
-    })
-
-    if(existingPayment){
-        console.log(`Event ${event.id} already processed. Skipping`);
-        return {message : `Event ${event.id} already processed. Skipping`}
-    }
-
-    switch(event.type){
-        case "checkout.session.completed" : {
-            const session = event.data.object 
-
-            const appointmentId = session.metadata?.appointmentId
-
-            const paymentId = session.metadata?.paymentId
-
-            if(!appointmentId || !paymentId){
-                console.error("Missing appointmentId or paymentId in session metadata");
-                return {message : "Missing appointmentId or paymentId in session metadata"}
-            }
-
-            const appointment = await prisma.appointment.findUnique({
-                where : {
-                    id : appointmentId
-                }
-            })
-
-            if(!appointment){
-                console.error(`Appointment with id ${appointmentId} not found`);
-                return {message : `Appointment with id ${appointmentId} not found`}
-            }
-
-            await prisma.$transaction(async (tx) => {
-                await tx.appointment.update({
-                    where : {
-                        id : appointmentId
-                    },
-                    data : {
-                        paymentStatus : session.payment_status === "paid" ? PaymentStatus.PAID : PaymentStatus.UNPAID
-                    }
-                });
-
-                await tx.payment.update({
-                    where : {
-                        id : paymentId
-                    },
-                    data : {
-                        stripeEventId : event.id,
-                        status : session.payment_status === "paid" ? PaymentStatus.PAID : PaymentStatus.UNPAID,
-                        paymentGatewayData : session as any,
-                    }
-                });
-            });
-
-            console.log(`Processed checkout.session.completed for appointment ${appointmentId} and payment ${paymentId}`);
-            break;
-        }
-        case "checkout.session.expired" : {
-                const session = event.data.object
-
-                console.log(`Checkout session ${session.id} expired. Marking associated payment as failed.`);
-                break;
-
-        }
-        case "payment_intent.payment_failed" : {
-            const session = event.data.object
-
-            console.log(`Payment intent ${session.id} failed. Marking associated payment as failed.`);
-            break;
-        }
-        default :
-            console.log(`Unhandled event type ${event.type}`);
-    }
-
-    return {message : `Webhook Event ${event.id} processed successfully`}
-}
-
-export const PaymentService = {
-    handlerStripeWebhookEvent
-}
+            },
             data: {
                 status: AppointmentStatus.CANCELED,
             },

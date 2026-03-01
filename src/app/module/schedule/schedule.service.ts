@@ -1,15 +1,14 @@
 import { addHours, addMinutes, format } from "date-fns";
-import { ICreateSchedulePayload, IUpdateSchedulePayload } from "./schedule.interface"
-import { convertDateTime } from "./schedule.utils";
+import { Prisma, Schedule } from "../../../generated/prisma/client";
+import { IQueryParams } from "../../interfaces/query.interface";
 import { prisma } from "../../lib/prisma";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { IQueryParams } from "../../interfaces/query.interface";
-import { Prisma, Schedule } from "../../../generated/prisma/client";
 import { scheduleFilterableFields, scheduleIncludeConfig, scheduleSearchableFields } from "./schedule.constant";
+import { ICreateSchedulePayload, IUpdateSchedulePayload } from "./schedule.interface";
+import { convertDateTime } from "./schedule.utils";
 
-
-const createSchedule = async (payload : ICreateSchedulePayload) => {
-    const {startDate, endDate, startTime, endTime} = payload;
+const createSchedule = async (payload: ICreateSchedulePayload) =>{
+    const { startDate, endDate, startTime, endTime } = payload;
 
     const interval = 30;
 
@@ -18,59 +17,58 @@ const createSchedule = async (payload : ICreateSchedulePayload) => {
 
     const schedules = [];
 
-    while(currentDate <= lastDate) {
+    while (currentDate <= lastDate) {
         const startDateTime = new Date(
             addMinutes(
-               addHours(
-                 `${format(currentDate, "yyyy-MM-dd")}`,
-                Number(startTime.split(":")[0]),
-               ),
-               Number(startTime.split(":")[1]),
-            ),
+                addHours(
+                    `${format(currentDate, "yyyy-MM-dd")}`,
+                    Number(startTime.split(":")[0])
+                ),
+                Number(startTime.split(":")[1])
+            )
         );
 
         const endDateTime = new Date(
             addMinutes(
-               addHours(
-                 `${format(currentDate, "yyyy-MM-dd")}`,
-                Number(endTime.split(":")[0]),
-               ),
-               Number(endTime.split(":")[1]),
-            ),
+                addHours(
+                    `${format(currentDate, "yyyy-MM-dd")}`,
+                    Number(endTime.split(":")[0])
+                ),
+                Number(endTime.split(":")[1])
+            )
         );
 
-        while (startDateTime <= endDateTime) {
+        while (startDateTime < endDateTime) {
             const s = await convertDateTime(startDateTime);
             const e = await convertDateTime(addMinutes(startDateTime, interval));
 
             const scheduleData = {
-                startDateTime : s,
-                endDateTime : e
+                startDateTime: s,
+                endDateTime: e
             }
 
             const existingSchedule = await prisma.schedule.findFirst({
-                where : {
-                    startDateTime : scheduleData.startDateTime,
-                    endDateTime : scheduleData.endDateTime
+                where: {
+                    startDateTime: scheduleData.startDateTime,
+                    endDateTime: scheduleData.endDateTime
                 }
-            });
+            })
 
             if (!existingSchedule) {
                 const result = await prisma.schedule.create({
-                    data : scheduleData
+                    data: scheduleData
                 })
-
+                console.log(result);
                 schedules.push(result);
             }
 
-            startDateTime.setMinutes(startDateTime.getMinutes() + interval);
+            startDateTime.setMinutes(startDateTime.getMinutes() + interval)
         }
-        
+
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    return schedules
-
+    return schedules;
 }
 
 const getAllSchedules = async (query : IQueryParams) => {
@@ -103,7 +101,6 @@ const getScheduleById = async (id: string) => {
     });
     return schedule;
 }
-
 
 // refactoring - doctor's appointment or booked slot conflict check
 const updateSchedule = async (id: string, payload: IUpdateSchedulePayload) => {
@@ -150,8 +147,7 @@ const deleteSchedule = async (id: string) => {
     return true;
 }
 
-
-export const scheduleService = {
+export const ScheduleService = {
     createSchedule,
     getAllSchedules,
     getScheduleById,

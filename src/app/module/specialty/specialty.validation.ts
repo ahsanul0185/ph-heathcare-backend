@@ -1,10 +1,10 @@
 import z from "zod";
 
 const createSpecialtyZodSchema = z.object({
-    title : z.string("Title is requried"),
-    description : z.string().optional(),
+    title : z.string("Title is required"),
+    description : z.string("Description is required").optional(),
 })
 
-export const speacialtyValidation = {
+export const SpecialtyValidation = {
     createSpecialtyZodSchema
 }
